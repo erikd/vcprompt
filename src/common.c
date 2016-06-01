@@ -138,6 +138,13 @@ isfile(char *name)
 }
 
 int
+isfileordir (char *name)
+{
+    return _testmode(name, S_IFREG | S_IFDIR, "file or directory");
+}
+
+
+int
 read_first_line(char *filename, char *buf, int size)
 {
     FILE *file;

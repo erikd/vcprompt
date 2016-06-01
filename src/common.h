@@ -98,6 +98,12 @@ isdir(char *name);
 int
 isfile(char *name);
 
+/* stat() the specified file and return true if it is a file or a directory,
+ * false if stat() failed or it is neither.
+ */
+int
+isfileordir(char *name);
+
 /* Open the specified file, read the first line (up to size-1 chars) to
  * buf, and close the file.  buf will not contain a newline.  Caller
  * must allocate at least size chars for buf.  Return 1 on successful
