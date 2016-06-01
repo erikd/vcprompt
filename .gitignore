@@ -1,0 +1,10 @@
+Makefile
+autom4te.cache
+config.h
+config.log
+config.status
+configure
+src/*.o
+tests/*-repo.tar
+tests/hg-repo.tar
+vcprompt
