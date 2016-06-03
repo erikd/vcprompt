@@ -19,20 +19,22 @@
 static int
 git_probe(vccontext_t *context)
 {
-    return isdir(".git");
+	// If this is a directory, then this is a full git clone. If its a file
+	// then this is a git submodule.
+    return isfileordir(".git");
 }
 
 static result_t*
-git_get_info(vccontext_t *context)
+git_common_read_revision(char * headpath, vccontext_t *context)
 {
-    result_t *result = init_result();
     char buf[1024];
 
-    if (!read_first_line(".git/HEAD", buf, 1024)) {
-        debug("unable to read .git/HEAD: assuming not a git repo");
-        goto err;
+    if (!read_first_line(headpath, buf, 1024)) {
+        debug("unable to read %s: assuming not a git repo", headpath);
+        return NULL;
     }
 
+    result_t *result = init_result();
     char *prefix = "ref: refs/heads/";
     int prefixlen = strlen(prefix);
 
@@ -81,11 +83,46 @@ git_get_info(vccontext_t *context)
         free_capture(capture);
     }
 
-    return result;
+	return result;
+}
 
- err:
-    free_result(result);
-    return NULL;
+static result_t*
+git_submodule_get_info(vccontext_t *context)
+{
+    char buf[1024], *headpath;
+
+	// In a git submodule, `.git` is a file that points to the config directory
+	// for this submodule, which allows us find the `HEAD` file.
+    if (!read_first_line(".git", buf, 1024)) {
+        debug("unable to read file '.git' assuming not a git repo");
+        return NULL;
+    }
+
+	strncat(buf, "/HEAD", sizeof(buf) - strlen(buf) - 1);
+	buf [sizeof(buf) - 1] = 0;
+
+    if ((headpath = strchr(buf, '.')) == NULL) {
+        debug("can't parse gitdir '%s'", buf);
+        return NULL;
+    }
+
+	return git_common_read_revision(headpath, context);
+}
+
+static result_t*
+git_repo_get_info(vccontext_t *context)
+{
+	// In a real git repo, so we know where the `HEAD` file is.
+    return git_common_read_revision(".git/HEAD", context);
+}
+
+static result_t*
+git_get_info(vccontext_t *context)
+{
+    if (isfile(".git"))
+        return git_submodule_get_info(context);
+
+    return git_repo_get_info(context);
 }
 
 vccontext_t*
