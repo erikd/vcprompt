@@ -7,7 +7,9 @@
  * (at your option) any later version.
  */
 
+#include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <sys/wait.h>
 
@@ -25,7 +27,7 @@ git_probe(vccontext_t *context)
 }
 
 static result_t*
-git_common_read_revision(char * headpath, vccontext_t *context)
+git_common_read_revision(char * headpath, vccontext_t *context, bool is_submodule)
 {
     char buf[1024];
 
@@ -47,9 +49,17 @@ git_common_read_revision(char * headpath, vccontext_t *context)
                 found_branch = 1;
         }
         else {
-            /* if it's not a branch name, assume it is a commit ID */
-            debug(".git/HEAD doesn't look like a head ref: unknown branch");
-            result_set_branch(result, "(unknown)");
+            if (is_submodule) {
+                char rev [16];
+                snprintf (rev, sizeof (rev), "rev:%s", buf);
+                rev [12] = 0;
+                result_set_branch(result, rev);
+            }
+            else {
+                /* if it's not a branch name, assume it is a commit ID */
+                debug(".git/HEAD doesn't look like a head ref: unknown branch");
+                result_set_branch(result, "(unknown)");
+            }
             result_set_revision(result, buf, 12);
         }
         if (context->options->show_revision && found_branch) {
@@ -106,14 +116,14 @@ git_submodule_get_info(vccontext_t *context)
         return NULL;
     }
 
-	return git_common_read_revision(headpath, context);
+	return git_common_read_revision(headpath, context, true);
 }
 
 static result_t*
 git_repo_get_info(vccontext_t *context)
 {
 	// In a real git repo, so we know where the `HEAD` file is.
-    return git_common_read_revision(".git/HEAD", context);
+    return git_common_read_revision(".git/HEAD", context, false);
 }
 
 static result_t*
