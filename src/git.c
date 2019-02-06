@@ -50,7 +50,7 @@ git_common_read_revision(char * headpath, vccontext_t *context, bool is_submodul
         }
         else {
             if (is_submodule) {
-                char rev [16];
+                char rev [1028];
                 snprintf (rev, sizeof (rev), "rev:%s", buf);
                 rev [12] = 0;
                 result_set_branch(result, rev);
